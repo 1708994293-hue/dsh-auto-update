@@ -3,7 +3,7 @@
     发布 dsh-auto-update 到 npm（npm 上包名为 @sueleven/dsh-auto-update；发布后任意设备可 `dsh plugin add @sueleven/dsh-auto-update` 安装）。
 
 .DESCRIPTION
-    1. 本地语法检查；
+    1. 本地语法检查及前端加载回归测试；
     2. 检查 npm 登录状态（未登录会提示先运行 npm login --auth-type=web）；
     3. npm publish --access public；
     4. 从 registry 读回版本确认发布成功。
@@ -24,11 +24,9 @@ Write-Host "发布包：$($pkg.name)@$($pkg.version)"
 
 Write-Host ''
 Write-Host '[1/3] 本地检查'
-& node --check lib/index.js
-& node --check lib/client.js
-& node --check lib/update.mjs
-if ($LASTEXITCODE -ne 0) { throw '语法检查失败' }
-Write-Host '    语法 OK'
+& npm run check
+if ($LASTEXITCODE -ne 0) { throw '语法检查或前端加载回归测试失败' }
+Write-Host '    语法及前端加载检查 OK'
 
 Write-Host ''
 Write-Host '[2/3] npm 登录状态'

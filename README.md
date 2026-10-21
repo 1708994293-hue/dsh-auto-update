@@ -37,6 +37,16 @@ dsh plugin --profile desktop add link:<本仓库绝对路径>
 
 装完**完全退出并重启 DSH**，侧边栏「插件」页里会出现 `dsh-auto-update`。
 
+### 从 1.0.0 升级
+
+`1.0.0` 的前端模块注册名遗漏了 npm scope，可能导致 Desktop 启动失败并记录 `duplicate factory registration for "dsh-auto-update"`。`1.0.1` 修复了这个问题。新版本发布到 npm 后，完全退出 DSH，再安装：
+
+```sh
+dsh plugin --profile desktop add '@sueleven/dsh-auto-update@1.0.1' --config.minimum-release-age=0
+```
+
+重新打开 DSH；若此前通过恢复操作停用了插件，在插件页重新启用即可。
+
 ## 如何工作
 
 | 部分 | 文件 | 作用 |
@@ -90,6 +100,7 @@ Windows 本地安装可再用 `pwsh -NoProfile -File scripts/uninstall.ps1` 删�
 
 ```sh
 node --check lib/index.js   # package.json 里 type=module
+node test/client.test.mjs # 前端模块注册及插槽加载回归测试
 node lib/update.mjs --check --dry-run
 ```
 

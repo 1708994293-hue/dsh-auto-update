@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 — 2026-10-21
+
+- 修复发布包使用 `@sueleven/dsh-auto-update`，但前端仍注册为 `dsh-auto-update`，导致 Desktop 启动时重复加载并报 `duplicate factory registration` 的问题。
+- 前端模块 ID 与 npm 包名保持一致；HTTP 路径、Cordis 插件条目 ID 与界面插槽 ID 保持兼容。
+- 新增前端加载回归测试，打包前自动校验模块注册名，阻止相同错误再次发布。
+
 ## 1.0.0 — 2026-10-21
 
 首个公开版本。
