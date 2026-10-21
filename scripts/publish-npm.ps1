@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    发布 dsh-auto-update 到 npm（发布后任意设备可 `dsh plugin add dsh-auto-update` 安装）。
+    发布 dsh-auto-update 到 npm（npm 上包名为 @sueleven/dsh-auto-update；发布后任意设备可 `dsh plugin add @sueleven/dsh-auto-update` 安装）。
 
 .DESCRIPTION
     1. 本地语法检查；
@@ -47,7 +47,8 @@ if ($LASTEXITCODE -ne 0) { throw 'npm publish 失败' }
 
 Write-Host ''
 Write-Host '校验 registry'
-$script = "const r=await fetch('https://registry.npmjs.org/$($pkg.name)/latest');const j=await r.json();console.log('registry version:',j.version);"
+$encoded = $pkg.name.Replace('/', '%2F')
+$script = "const r=await fetch('https://registry.npmjs.org/$encoded/latest');const j=await r.json();console.log('registry version:',j.version);"
 & node --input-type=module -e $script
 if ($LASTEXITCODE -ne 0) { throw 'registry 校验失败' }
 

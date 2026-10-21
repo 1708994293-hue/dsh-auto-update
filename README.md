@@ -14,13 +14,15 @@
 **从 npm 安装（推荐，任意平台）**
 
 ```sh
-dsh plugin --profile desktop add dsh-auto-update
+dsh plugin --profile desktop add @sueleven/dsh-auto-update
 ```
+
+> npm 上无 scope 的名字 `dsh-auto-update` 被 registry 以「与已有包 `dsh-autoupdate` 名称过于相似」拒绝，因此发布名带 scope：`@sueleven/dsh-auto-update`。
 
 **从 GitHub 安装**
 
 ```sh
-dsh plugin --profile desktop add github:<owner>/dsh-auto-update
+dsh plugin --profile desktop add github:1708994293-hue/dsh-auto-update
 ```
 
 **从本地目录安装**
@@ -43,7 +45,7 @@ dsh plugin --profile desktop add link:<本仓库绝对路径>
 | Client 半 | `lib/client.js` | 注册 `shell.overlay` 提示卡，轮询状态、展示列表与按钮 |
 | 检查/更新器 | `lib/update.mjs` | 读取 profile、查询 npm registry、按需调用官方 `dsh plugin ... add` |
 
-检查范围：profile `package.json` 的 `dependencies` ∩ `dsh.profile.bundles`（即「已下载且已启用」），并排除市场里被禁用的包与非 registry 依赖（`file:` / `link:` / `git:` 等）。版本比较使用 semver，只在前向升级时列出，不会把插件降级。
+检查范围：profile `package.json` 的 `dependencies` ∩ `dsh.profile.bundles`（即「已下载且已启用」），并排除市场里被禁用的包、非 registry 依赖（`file:` / `link:` / `git:` 等）以及插件自身。版本比较使用 semver，只在前向升级时列出，不会把插件降级。
 
 更新方式：`<DSH exe> --expose-internals <app.asar>/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js plugin --profile <name> add <pkg>@<ver> --config.minimum-release-age=0`，即 DSH 插件市场使用的同一个官方通道。
 
@@ -62,7 +64,7 @@ dsh plugin --profile desktop add link:<本仓库绝对路径>
 - `<插件目录>/logs/plugin.log`：插件生命周期（启动、检查结果、用户确认、错误）
 - `<插件目录>/state/last-run.json`：最近一次检查的结构化结果
 
-插件目录：本地 `link:` 安装是 `~/.dsh/plugins/dsh-auto-update`；npm 安装是 profile 的 `node_modules/dsh-auto-update`。
+插件目录：本地 `link:` 安装是 `~/.dsh/plugins/dsh-auto-update`；npm 安装是 profile 的 `node_modules/@sueleven/dsh-auto-update`。
 
 ## 手动使用
 
@@ -79,7 +81,7 @@ node <插件目录>/lib/update.mjs --check --json
 ## 卸载
 
 ```sh
-dsh plugin --profile desktop remove dsh-auto-update
+dsh plugin --profile desktop remove @sueleven/dsh-auto-update
 ```
 
 Windows 本地安装可再用 `pwsh -NoProfile -File scripts/uninstall.ps1` 删除插件目录。
@@ -111,7 +113,8 @@ description:
 A DeepSeek Harness plugin that checks your installed-and-enabled plugins for newer versions on every DSH launch, lists what it finds, and updates only after you confirm. Updates go through the official `dsh plugin add` channel and take effect after a restart.
 
 ```sh
-dsh plugin --profile desktop add dsh-auto-update
+dsh plugin --profile desktop add @sueleven/dsh-auto-update
+# or: dsh plugin --profile desktop add github:1708994293-hue/dsh-auto-update
 ```
 
 ## License

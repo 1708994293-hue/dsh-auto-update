@@ -1,0 +1,6 @@
+url: https://github.com/1708994293-hue/dsh-auto-update
+name: 1708994293-hue/dsh-auto-update
+category: workflow
+description:
+  en: Checks installed and enabled DSH plugins for new versions on every startup and asks before updating them.
+  zh: 每次打开 DSH 自动检查已启用插件的新版本，列出并询问是否更新。

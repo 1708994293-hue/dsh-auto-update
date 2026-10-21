@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     卸载 dsh-auto-update 插件：从 profile 移除 bundle 依赖与插件文件。
 
@@ -55,21 +55,28 @@ function Resolve-DshExe {
 }
 
 if (Test-Path -LiteralPath $profilePackage) {
+    # 同时兼容 npm 上架用的带 scope 包名与历史安装的无 scope 名
+    $pkgNames = @('@sueleven/dsh-auto-update', 'dsh-auto-update')
     $profileJson = Get-Content -LiteralPath $profilePackage -Raw | ConvertFrom-Json
-    if ($profileJson.dependencies.'dsh-auto-update') {
-        Write-Host '[1/3] 从 profile 移除 bundle'
+    $depNames = @($profileJson.dependencies.PSObject.Properties.Name)
+    $bundleNames = @($profileJson.dsh.profile.bundles)
+    $present = @($pkgNames | Where-Object { ($depNames -contains $_) -or ($bundleNames -contains $_) })
+    if ($present.Count -gt 0) {
+        Write-Host "[1/3] 从 profile 移除 bundle：$($present -join ', ')"
         $exe = Resolve-DshExe
         if (-not $exe) { throw '找不到 DeepSeek Harness.exe，请用 -DshExe 指定' }
         $cli = Join-Path (Split-Path $exe) 'resources\app.asar\dsh\node_modules\@deepseek-ai\dsh-desktop-host\lib\cli.js'
         $previousRunAsNode = $env:ELECTRON_RUN_AS_NODE
         $env:ELECTRON_RUN_AS_NODE = '1'
         try {
-            # Electron 是 GUI 子系统程序：用 `&` 调用不会等待、也不写 $LASTEXITCODE，
-            # 必须用 Start-Process -Wait -PassThru 拿真实退出码；ArgumentList 用单个字符串并显式加引号，
-            # 否则含空格的路径（DeepSeek Harness）会被再次拆开。
-            $argLine = "--expose-internals `"$cli`" plugin --profile $ProfileName remove dsh-auto-update --config.minimum-release-age=0"
-            $proc = Start-Process -FilePath $exe -ArgumentList $argLine -NoNewWindow -Wait -PassThru
-            if ($proc.ExitCode -ne 0) { throw "dsh plugin remove 失败（退出码 $($proc.ExitCode)）" }
+            foreach ($name in $present) {
+                # Electron 是 GUI 子系统程序：用 `&` 调用不会等待、也不写 $LASTEXITCODE，
+                # 必须用 Start-Process -Wait -PassThru 拿真实退出码；ArgumentList 用单个字符串并显式加引号，
+                # 否则含空格的路径（DeepSeek Harness）会被再次拆开。
+                $argLine = "--expose-internals `"$cli`" plugin --profile $ProfileName remove $name --config.minimum-release-age=0"
+                $proc = Start-Process -FilePath $exe -ArgumentList $argLine -NoNewWindow -Wait -PassThru
+                if ($proc.ExitCode -ne 0) { throw "dsh plugin remove $name 失败（退出码 $($proc.ExitCode)）" }
+            }
         }
         finally {
             if ($null -eq $previousRunAsNode) { Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue }
@@ -81,8 +88,10 @@ if (Test-Path -LiteralPath $profilePackage) {
     }
 
     $after = Get-Content -LiteralPath $profilePackage -Raw | ConvertFrom-Json
-    if ($after.dependencies.'dsh-auto-update') { throw '卸载失败：依赖仍在 profile package.json 中（可能 DSH 正在运行或 pnpm 报错）' }
-    if (@($after.dsh.profile.bundles) -contains 'dsh-auto-update') { throw '卸载失败：dsh.profile.bundles 里仍有 dsh-auto-update' }
+    $afterDeps = @($after.dependencies.PSObject.Properties.Name)
+    $afterBundles = @($after.dsh.profile.bundles)
+    $leftover = @($pkgNames | Where-Object { ($afterDeps -contains $_) -or ($afterBundles -contains $_) })
+    if ($leftover.Count -gt 0) { throw "卸载失败：profile 里仍有 $($leftover -join ', ')（可能 DSH 正在运行或 pnpm 报错）" }
     Write-Host '    已从依赖与 bundles 中移除'
 }
 else {

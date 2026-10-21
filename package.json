@@ -1,5 +1,5 @@
 {
-  "name": "dsh-auto-update",
+  "name": "@sueleven/dsh-auto-update",
   "version": "1.0.0",
   "description": "DSH 插件：每次打开 DeepSeek Harness 时自动检查已下载并启用的插件有没有新版本，在界面上列出并询问是否更新，确认后更新到最新版。",
   "type": "module",

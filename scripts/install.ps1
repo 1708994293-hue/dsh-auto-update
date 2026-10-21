@@ -43,6 +43,10 @@ if (-not (Test-Path -LiteralPath (Join-Path $sourceDir 'package.json'))) {
 }
 
 $installDir = Join-Path $DshHome 'plugins\dsh-auto-update'
+# 包名以 package.json 为准（npm 发布名带 scope：@sueleven/dsh-auto-update）
+$pkgName = (Get-Content -LiteralPath (Join-Path $sourceDir 'package.json') -Raw | ConvertFrom-Json).name
+if (-not $pkgName) { throw '无法从 package.json 读取插件包名' }
+$legacyNames = @('dsh-auto-update') | Where-Object { $_ -ne $pkgName }
 $profileDir = Join-Path $DshHome "profiles\$ProfileName"
 $profilePackage = Join-Path $profileDir 'package.json'
 $patchFile = Join-Path $profileDir 'cordis.patch.yml'
@@ -134,6 +138,20 @@ try {
     # Electron 是 GUI 子系统程序：用 `&` 调用不会等待、也不写 $LASTEXITCODE，
     # 必须用 Start-Process -Wait -PassThru 拿真实退出码；ArgumentList 用单个字符串并显式加引号，
     # 否则含空格的路径（DeepSeek Harness）会被再次拆开。
+    # 先移除旧的无 scope 包名（历史安装），否则同一个插件会在 bundles 里出现两次、被挂载两次。
+    $profileJsonBefore = Get-Content -LiteralPath $profilePackage -Raw | ConvertFrom-Json
+    $beforeBundles = @($profileJsonBefore.dsh.profile.bundles)
+    foreach ($legacy in $legacyNames) {
+        $hasDep = @($profileJsonBefore.dependencies.PSObject.Properties.Name) -contains $legacy
+        if (-not ($hasDep -or ($beforeBundles -contains $legacy))) { continue }
+        Write-Host "    移除旧包名：$legacy"
+        $legacyArgLine = "--expose-internals `"$cli`" plugin --profile $ProfileName remove $legacy --config.minimum-release-age=0"
+        $legacyProc = Start-Process -FilePath $exe -ArgumentList $legacyArgLine -NoNewWindow -Wait -PassThru
+        if ($legacyProc.ExitCode -ne 0) {
+            Write-Warning "移除旧包名 $legacy 失败（退出码 $($legacyProc.ExitCode)），可手动执行：`"$exe`" --expose-internals `"$cli`" plugin --profile $ProfileName remove $legacy"
+        }
+    }
+
     $argLine = "--expose-internals `"$cli`" plugin --profile $ProfileName add `"$spec`" --config.minimum-release-age=0"
     $proc = Start-Process -FilePath $exe -ArgumentList $argLine -NoNewWindow -Wait -PassThru
     if ($proc.ExitCode -ne 0) {
@@ -147,12 +165,12 @@ finally {
 
 Write-Host '    校验 profile'
 $profileJson = Get-Content -LiteralPath $profilePackage -Raw | ConvertFrom-Json
-$dep = $profileJson.dependencies.'dsh-auto-update'
+$dep = @($profileJson.dependencies.PSObject.Properties) | Where-Object { $_.Name -eq $pkgName } | ForEach-Object { $_.Value }
 $bundles = @($profileJson.dsh.profile.bundles)
-if (-not $dep) { throw '安装后 profile package.json 里没有 dsh-auto-update 依赖' }
-if ($bundles -notcontains 'dsh-auto-update') { throw '安装后 dsh.profile.bundles 里没有 dsh-auto-update' }
+if (-not $dep) { throw "安装后 profile package.json 里没有 $pkgName 依赖" }
+if ($bundles -notcontains $pkgName) { throw "安装后 dsh.profile.bundles 里没有 $pkgName" }
 Write-Host "    依赖：$dep"
-Write-Host '    已加入 dsh.profile.bundles'
+Write-Host "    已加入 dsh.profile.bundles（$pkgName）"
 
 Write-Host ''
 Write-Host '完成。'
