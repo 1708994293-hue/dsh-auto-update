@@ -1,0 +1,8 @@
+node_modules/
+logs/
+state/
+*.log
+_publish/
+scripts/_research/
+.DS_Store
+Thumbs.db
